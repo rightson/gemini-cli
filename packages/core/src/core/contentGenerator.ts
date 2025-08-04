@@ -18,11 +18,18 @@ import { DEFAULT_GEMINI_MODEL } from '../config/models.js';
 import { Config } from '../config/config.js';
 import { getEffectiveModel } from './modelCheck.js';
 import { UserTierId } from '../code_assist/types.js';
+import { 
+  UniversalContentRequest, 
+  UniversalResponse, 
+  UniversalEmbeddingRequest, 
+  UniversalEmbeddingResponse 
+} from './universalTypes.js';
 
 /**
  * Interface abstracting the core functionalities for generating content and counting tokens.
  */
 export interface ContentGenerator {
+  // Existing Gemini-compatible methods (for backward compatibility)
   generateContent(
     request: GenerateContentParameters,
   ): Promise<GenerateContentResponse>;
@@ -35,7 +42,12 @@ export interface ContentGenerator {
 
   embedContent(request: EmbedContentParameters): Promise<EmbedContentResponse>;
 
+  // New provider-agnostic methods
+  generateUniversalContent?(request: UniversalContentRequest): Promise<UniversalResponse>;
+  generateUniversalEmbedding?(request: UniversalEmbeddingRequest): Promise<UniversalEmbeddingResponse>;
+
   userTier?: UserTierId;
+  providerType?: ProviderType;
 }
 
 export enum AuthType {
@@ -43,14 +55,30 @@ export enum AuthType {
   USE_GEMINI = 'gemini-api-key',
   USE_VERTEX_AI = 'vertex-ai',
   CLOUD_SHELL = 'cloud-shell',
+  OPENAI_API_KEY = 'openai-api-key',
+  OPENAI_COMPATIBLE = 'openai-compatible',
+}
+
+export enum ProviderType {
+  GEMINI = 'gemini',
+  OPENAI = 'openai',
+  OPENAI_COMPATIBLE = 'openai-compatible',
 }
 
 export type ContentGeneratorConfig = {
+  provider?: ProviderType;
   model: string;
   apiKey?: string;
+  baseUrl?: string;
   vertexai?: boolean;
   authType?: AuthType | undefined;
   proxy?: string | undefined;
+  openaiConfig?: {
+    organization?: string;
+    maxTokens?: number;
+    temperature?: number;
+    topP?: number;
+  };
 };
 
 export function createContentGeneratorConfig(
@@ -61,11 +89,14 @@ export function createContentGeneratorConfig(
   const googleApiKey = process.env.GOOGLE_API_KEY || undefined;
   const googleCloudProject = process.env.GOOGLE_CLOUD_PROJECT || undefined;
   const googleCloudLocation = process.env.GOOGLE_CLOUD_LOCATION || undefined;
+  const openaiApiKey = process.env.OPENAI_API_KEY || undefined;
+  const openaiBaseUrl = process.env.OPENAI_BASE_URL || undefined;
 
   // Use runtime model from config if available; otherwise, fall back to parameter or default
   const effectiveModel = config.getModel() || DEFAULT_GEMINI_MODEL;
 
   const contentGeneratorConfig: ContentGeneratorConfig = {
+    provider: ProviderType.GEMINI, // Default to Gemini for backward compatibility
     model: effectiveModel,
     authType,
     proxy: config?.getProxy(),
@@ -101,6 +132,22 @@ export function createContentGeneratorConfig(
     return contentGeneratorConfig;
   }
 
+  // Handle OpenAI API key authentication
+  if (authType === AuthType.OPENAI_API_KEY && openaiApiKey) {
+    contentGeneratorConfig.provider = ProviderType.OPENAI;
+    contentGeneratorConfig.apiKey = openaiApiKey;
+    contentGeneratorConfig.baseUrl = openaiBaseUrl || 'https://api.openai.com/v1';
+    return contentGeneratorConfig;
+  }
+
+  // Handle OpenAI-compatible endpoints
+  if (authType === AuthType.OPENAI_COMPATIBLE && openaiApiKey && openaiBaseUrl) {
+    contentGeneratorConfig.provider = ProviderType.OPENAI_COMPATIBLE;
+    contentGeneratorConfig.apiKey = openaiApiKey;
+    contentGeneratorConfig.baseUrl = openaiBaseUrl;
+    return contentGeneratorConfig;
+  }
+
   return contentGeneratorConfig;
 }
 
@@ -115,6 +162,19 @@ export async function createContentGenerator(
       'User-Agent': `GeminiCLI/${version} (${process.platform}; ${process.arch})`,
     },
   };
+
+  // Handle OpenAI and OpenAI-compatible providers
+  if (
+    config.provider === ProviderType.OPENAI ||
+    config.provider === ProviderType.OPENAI_COMPATIBLE ||
+    config.authType === AuthType.OPENAI_API_KEY ||
+    config.authType === AuthType.OPENAI_COMPATIBLE
+  ) {
+    const { OpenAIContentGenerator } = await import('./openaiClient.js');
+    return new OpenAIContentGenerator(config, httpOptions);
+  }
+
+  // Handle Google OAuth and Cloud Shell
   if (
     config.authType === AuthType.LOGIN_WITH_GOOGLE ||
     config.authType === AuthType.CLOUD_SHELL
@@ -127,6 +187,7 @@ export async function createContentGenerator(
     );
   }
 
+  // Handle Gemini API key and Vertex AI
   if (
     config.authType === AuthType.USE_GEMINI ||
     config.authType === AuthType.USE_VERTEX_AI
@@ -141,6 +202,6 @@ export async function createContentGenerator(
   }
 
   throw new Error(
-    `Error creating contentGenerator: Unsupported authType: ${config.authType}`,
+    `Error creating contentGenerator: Unsupported authType/provider: ${config.authType}/${config.provider}`,
   );
 }
