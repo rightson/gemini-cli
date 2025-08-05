@@ -15,7 +15,6 @@ import {
   Part,
   FinishReason,
   ContentListUnion,
-  PartListUnion,
 } from '@google/genai';
 import {
   ContentGenerator,
@@ -26,7 +25,6 @@ import {
   UniversalContentRequest,
   UniversalResponse,
   UniversalMessage,
-  UniversalTokenUsage,
   UniversalEmbeddingRequest,
   UniversalEmbeddingResponse,
 } from './universalTypes.js';
