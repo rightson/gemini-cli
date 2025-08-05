@@ -11,6 +11,7 @@ Gemini CLI brings the capabilities of Gemini models to your terminal in an inter
 This documentation is organized into the following sections:
 
 - **[Execution and Deployment](./deployment.md):** Information for running Gemini CLI.
+- **[OpenAI Integration](./openai-integration.md):** Complete guide to using OpenAI and OpenAI-compatible endpoints.
 - **[Architecture Overview](./architecture.md):** Understand the high-level design of Gemini CLI, including its components and how they interact.
 - **CLI Usage:** Documentation for `packages/cli`.
   - **[CLI Introduction](./cli/index.md):** Overview of the command-line interface.
