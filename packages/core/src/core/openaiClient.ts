@@ -161,34 +161,9 @@ export class FormatMapper {
   /**
    * Convert OpenAI response to Gemini format
    */
-  static openAIResponseToGemini(response: OpenAIResponse | any): GenerateContentResponse {
-    let choice: any;
-    let content = '';
-
-    // Handle standard OpenAI format: response.choices[0].message.content
-    if (response.choices && response.choices[0]) {
-      choice = response.choices[0];
-      content = choice?.message?.content || '';
-    }
-    // Handle custom format: response.message[0].content (array of messages)
-    else if (response.message && Array.isArray(response.message) && response.message[0]) {
-      const message = response.message[0];
-      content = message.content || '';
-      choice = {
-        message: message,
-        finish_reason: 'stop',
-        index: 0
-      };
-    }
-    // Handle other possible formats: response.message.content (single message object)
-    else if (response.message && !Array.isArray(response.message)) {
-      content = response.message.content || '';
-      choice = {
-        message: response.message,
-        finish_reason: 'stop', 
-        index: 0
-      };
-    }
+  static openAIResponseToGemini(response: OpenAIResponse): GenerateContentResponse {
+    const choice = response.choices[0];
+    const content = choice?.message?.content || '';
     
     // Create a proper GenerateContentResponse class instance
     const result = new (GenerateContentResponse as any)();
@@ -197,7 +172,7 @@ export class FormatMapper {
         role: 'model',
         parts: [{ text: content }] as Part[],
       },
-      finishReason: choice?.finish_reason as FinishReason || 'STOP',
+      finishReason: choice?.finish_reason as FinishReason,
       index: choice?.index || 0,
     }];
     
