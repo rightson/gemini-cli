@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CommandContext } from '../../ui/commands/types.js';
+import type { CommandContext } from '../../ui/commands/types.js';
 
 /**
  * Defines the interface for a prompt processor, a module that can transform
@@ -33,6 +33,8 @@ export interface IPromptProcessor {
 
 /**
  * The placeholder string for shorthand argument injection in custom commands.
+ * When used outside of !{...}, arguments are injected raw.
+ * When used inside !{...}, arguments are shell-escaped.
  */
 export const SHORTHAND_ARGS_PLACEHOLDER = '{{args}}';
 

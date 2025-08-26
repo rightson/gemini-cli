@@ -101,11 +101,14 @@ export class FormatMapper {
    * Convert Gemini Content[] to OpenAI messages
    */
   static geminiToOpenAI(contents: Content[]): OpenAIMessage[] {
-    return contents.map(content => {
-      const role = content.role === 'model' ? 'assistant' : content.role as 'user' | 'system';
-      const textParts = content.parts?.filter(part => part.text) || [];
-      const content_text = textParts.map(part => part.text).join('') || '';
-      
+    return contents.map((content) => {
+      const role =
+        content.role === 'model'
+          ? 'assistant'
+          : (content.role as 'user' | 'system');
+      const textParts = content.parts?.filter((part) => part.text) || [];
+      const content_text = textParts.map((part) => part.text).join('') || '';
+
       return {
         role,
         content: content_text,
@@ -117,7 +120,7 @@ export class FormatMapper {
    * Convert OpenAI messages to Gemini Content[]
    */
   static openAIToGemini(messages: OpenAIMessage[]): Content[] {
-    return messages.map(msg => ({
+    return messages.map((msg) => ({
       role: msg.role === 'assistant' ? 'model' : msg.role,
       parts: [{ text: msg.content }] as Part[],
     }));
@@ -127,14 +130,16 @@ export class FormatMapper {
    * Convert Universal messages to OpenAI format
    */
   static universalToOpenAI(messages: UniversalMessage[]): OpenAIMessage[] {
-    return messages.map(msg => ({
+    return messages.map((msg) => ({
       role: msg.role,
       content: msg.content,
       name: msg.name,
-      function_call: msg.functionCall ? {
-        name: msg.functionCall.name,
-        arguments: msg.functionCall.arguments,
-      } : undefined,
+      function_call: msg.functionCall
+        ? {
+            name: msg.functionCall.name,
+            arguments: msg.functionCall.arguments,
+          }
+        : undefined,
     }));
   }
 
@@ -146,36 +151,46 @@ export class FormatMapper {
     return {
       content: choice?.message?.content || '',
       finishReason: choice?.finish_reason,
-      usage: response.usage ? {
-        promptTokens: response.usage.prompt_tokens,
-        completionTokens: response.usage.completion_tokens,
-        totalTokens: response.usage.total_tokens,
-      } : undefined,
-      functionCalls: choice?.message?.function_call ? [{
-        name: choice.message.function_call.name,
-        arguments: choice.message.function_call.arguments,
-      }] : undefined,
+      usage: response.usage
+        ? {
+            promptTokens: response.usage.prompt_tokens,
+            completionTokens: response.usage.completion_tokens,
+            totalTokens: response.usage.total_tokens,
+          }
+        : undefined,
+      functionCalls: choice?.message?.function_call
+        ? [
+            {
+              name: choice.message.function_call.name,
+              arguments: choice.message.function_call.arguments,
+            },
+          ]
+        : undefined,
     };
   }
 
   /**
    * Convert OpenAI response to Gemini format
    */
-  static openAIResponseToGemini(response: OpenAIResponse): GenerateContentResponse {
+  static openAIResponseToGemini(
+    response: OpenAIResponse,
+  ): GenerateContentResponse {
     const choice = response.choices[0];
     const content = choice?.message?.content || '';
-    
+
     // Create a proper GenerateContentResponse class instance
     const result = new (GenerateContentResponse as any)();
-    result.candidates = [{
-      content: {
-        role: 'model',
-        parts: [{ text: content }] as Part[],
+    result.candidates = [
+      {
+        content: {
+          role: 'model',
+          parts: [{ text: content }] as Part[],
+        },
+        finishReason: choice?.finish_reason as FinishReason,
+        index: choice?.index || 0,
       },
-      finishReason: choice?.finish_reason as FinishReason,
-      index: choice?.index || 0,
-    }];
-    
+    ];
+
     if (response.usage) {
       result.usageMetadata = {
         promptTokenCount: response.usage.prompt_tokens,
@@ -183,7 +198,7 @@ export class FormatMapper {
         totalTokenCount: response.usage.total_tokens,
       };
     }
-    
+
     return result;
   }
 }
@@ -202,7 +217,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
     if (!config.apiKey) {
       throw new Error('OpenAI API key is required');
     }
-    
+
     // Set default base URL if not provided
     if (!config.baseUrl) {
       config.baseUrl = 'https://api.openai.com/v1';
@@ -228,7 +243,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
     const url = `${this.config.baseUrl}${endpoint}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.config.apiKey}`,
+      Authorization: `Bearer ${this.config.apiKey}`,
       ...this.httpOptions.headers,
     };
 
@@ -244,7 +259,9 @@ export class OpenAIContentGenerator implements ContentGenerator {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}. ${errorData.error?.message || ''}`);
+      throw new Error(
+        `OpenAI API error: ${response.status} ${response.statusText}. ${errorData.error?.message || ''}`,
+      );
     }
 
     return response.json();
@@ -253,12 +270,15 @@ export class OpenAIContentGenerator implements ContentGenerator {
   /**
    * Make streaming request to OpenAI API
    */
-  private async *makeStreamRequest(endpoint: string, body: any): AsyncGenerator<any> {
+  private async *makeStreamRequest(
+    endpoint: string,
+    body: any,
+  ): AsyncGenerator<any> {
     const url = `${this.config.baseUrl}${endpoint}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.config.apiKey}`,
-      'Accept': 'text/event-stream',
+      Authorization: `Bearer ${this.config.apiKey}`,
+      Accept: 'text/event-stream',
       ...this.httpOptions.headers,
     };
 
@@ -274,7 +294,9 @@ export class OpenAIContentGenerator implements ContentGenerator {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}. ${errorData.error?.message || ''}`);
+      throw new Error(
+        `OpenAI API error: ${response.status} ${response.statusText}. ${errorData.error?.message || ''}`,
+      );
     }
 
     const reader = response.body?.getReader();
@@ -297,7 +319,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
         for (const line of lines) {
           const trimmed = line.trim();
           if (trimmed === '' || !trimmed.startsWith('data: ')) continue;
-          
+
           const data = trimmed.slice(6);
           if (data === '[DONE]') return;
 
@@ -318,16 +340,19 @@ export class OpenAIContentGenerator implements ContentGenerator {
   /**
    * Generate content using Gemini-compatible interface
    */
-  async generateContent(request: GenerateContentParameters): Promise<GenerateContentResponse> {
+  async generateContent(
+    request: GenerateContentParameters,
+  ): Promise<GenerateContentResponse> {
     // Convert ContentListUnion to Content[]
     const contents = this.convertToContentArray(request.contents);
     const messages = FormatMapper.geminiToOpenAI(contents);
-    
+
     const openAIRequest: OpenAIRequest = {
       model: request.model,
       messages,
       max_tokens: this.config.openaiConfig?.maxTokens,
-      temperature: request.config?.temperature || this.config.openaiConfig?.temperature,
+      temperature:
+        request.config?.temperature || this.config.openaiConfig?.temperature,
       top_p: request.config?.topP || this.config.openaiConfig?.topP,
     };
 
@@ -338,30 +363,38 @@ export class OpenAIContentGenerator implements ContentGenerator {
   /**
    * Generate streaming content using Gemini-compatible interface
    */
-  async generateContentStream(request: GenerateContentParameters): Promise<AsyncGenerator<GenerateContentResponse>> {
+  async generateContentStream(
+    request: GenerateContentParameters,
+  ): Promise<AsyncGenerator<GenerateContentResponse>> {
     // Convert ContentListUnion to Content[]
     const contents = this.convertToContentArray(request.contents);
     const messages = FormatMapper.geminiToOpenAI(contents);
-    
+
     const openAIRequest: OpenAIRequest = {
       model: request.model,
       messages,
       max_tokens: this.config.openaiConfig?.maxTokens,
-      temperature: request.config?.temperature || this.config.openaiConfig?.temperature,
+      temperature:
+        request.config?.temperature || this.config.openaiConfig?.temperature,
       top_p: request.config?.topP || this.config.openaiConfig?.topP,
     };
 
-    const streamGenerator = this.makeStreamRequest('/chat/completions', openAIRequest);
-    
+    const streamGenerator = this.makeStreamRequest(
+      '/chat/completions',
+      openAIRequest,
+    );
+
     return this.convertStreamToGeminiFormat(streamGenerator);
   }
 
   /**
    * Convert OpenAI stream chunks to Gemini format
    */
-  private async *convertStreamToGeminiFormat(stream: AsyncGenerator<OpenAIStreamChunk>): AsyncGenerator<GenerateContentResponse> {
+  private async *convertStreamToGeminiFormat(
+    stream: AsyncGenerator<OpenAIStreamChunk>,
+  ): AsyncGenerator<GenerateContentResponse> {
     let accumulatedContent = '';
-    
+
     for await (const chunk of stream) {
       const choice = chunk.choices[0];
       if (!choice) continue;
@@ -371,15 +404,17 @@ export class OpenAIContentGenerator implements ContentGenerator {
 
       // Create a proper GenerateContentResponse instance
       const result = new (GenerateContentResponse as any)();
-      result.candidates = [{
-        content: {
-          role: 'model',
-          parts: [{ text: deltaContent }] as Part[],
+      result.candidates = [
+        {
+          content: {
+            role: 'model',
+            parts: [{ text: deltaContent }] as Part[],
+          },
+          finishReason: choice.finish_reason as FinishReason,
+          index: choice.index || 0,
         },
-        finishReason: choice.finish_reason as FinishReason,
-        index: choice.index || 0,
-      }];
-      
+      ];
+
       yield result;
     }
   }
@@ -387,17 +422,22 @@ export class OpenAIContentGenerator implements ContentGenerator {
   /**
    * Count tokens (approximation for OpenAI)
    */
-  async countTokens(request: CountTokensParameters): Promise<CountTokensResponse> {
+  async countTokens(
+    request: CountTokensParameters,
+  ): Promise<CountTokensResponse> {
     // OpenAI doesn't have a direct token counting API
     // This is an approximation based on common tokenization rules
     const contents = this.convertToContentArray(request.contents);
-    const text = contents.map((content: Content) => 
-      content.parts?.map((part: Part) => part.text).join('') || ''
-    ).join(' ');
-    
+    const text = contents
+      .map(
+        (content: Content) =>
+          content.parts?.map((part: Part) => part.text).join('') || '',
+      )
+      .join(' ');
+
     // Rough approximation: 1 token ≈ 4 characters for English text
     const approximateTokens = Math.ceil(text.length / 4);
-    
+
     return {
       totalTokens: approximateTokens,
     };
@@ -406,14 +446,16 @@ export class OpenAIContentGenerator implements ContentGenerator {
   /**
    * Generate embeddings
    */
-  async embedContent(request: EmbedContentParameters): Promise<EmbedContentResponse> {
+  async embedContent(
+    request: EmbedContentParameters,
+  ): Promise<EmbedContentResponse> {
     const embeddingRequest = {
       model: request.model,
       input: request.contents,
     };
 
     const response = await this.makeRequest('/embeddings', embeddingRequest);
-    
+
     return {
       embeddings: response.data.map((item: any) => ({
         values: item.embedding,
@@ -424,9 +466,11 @@ export class OpenAIContentGenerator implements ContentGenerator {
   /**
    * Generate content using Universal format
    */
-  async generateUniversalContent(request: UniversalContentRequest): Promise<UniversalResponse> {
+  async generateUniversalContent(
+    request: UniversalContentRequest,
+  ): Promise<UniversalResponse> {
     const messages = FormatMapper.universalToOpenAI(request.messages);
-    
+
     const openAIRequest: OpenAIRequest = {
       model: request.model,
       messages,
@@ -442,21 +486,25 @@ export class OpenAIContentGenerator implements ContentGenerator {
   /**
    * Generate embeddings using Universal format
    */
-  async generateUniversalEmbedding(request: UniversalEmbeddingRequest): Promise<UniversalEmbeddingResponse> {
+  async generateUniversalEmbedding(
+    request: UniversalEmbeddingRequest,
+  ): Promise<UniversalEmbeddingResponse> {
     const embeddingRequest = {
       model: request.model,
       input: request.input,
     };
 
     const response = await this.makeRequest('/embeddings', embeddingRequest);
-    
+
     return {
       embeddings: response.data.map((item: any) => item.embedding),
-      usage: response.usage ? {
-        promptTokens: response.usage.prompt_tokens,
-        completionTokens: 0, // Embeddings don't have completion tokens
-        totalTokens: response.usage.total_tokens,
-      } : undefined,
+      usage: response.usage
+        ? {
+            promptTokens: response.usage.prompt_tokens,
+            completionTokens: 0, // Embeddings don't have completion tokens
+            totalTokens: response.usage.total_tokens,
+          }
+        : undefined,
     };
   }
 }

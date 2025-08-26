@@ -2,12 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Gemini CLI Model Configuration",
   "description": "Override default Gemini models with custom models (OpenAI, local, etc.)",
-  
+
   "models": {
     "_comment": "All available model override keys - uncomment and modify as needed",
-    
+
     "DEFAULT_GEMINI_MODEL": "gpt-4.1",
-    "DEFAULT_GEMINI_FLASH_MODEL": "gpt-4.1-mini", 
+    "DEFAULT_GEMINI_FLASH_MODEL": "gpt-4.1-mini",
     "DEFAULT_GEMINI_FLASH_LITE_MODEL": "gpt-4.1-mini",
     "DEFAULT_GEMINI_EMBEDDING_MODEL": "text-embedding-ada-002"
   },
@@ -23,31 +23,31 @@
 
   "_examples": {
     "_comment": "Example configurations - copy to main 'models' section as needed",
-    
+
     "minimal_2_models": {
       "DEFAULT_GEMINI_MODEL": "gpt-4.1",
       "DEFAULT_GEMINI_FLASH_LITE_MODEL": "gpt-4.1-mini"
     },
-    
+
     "full_openai_replacement": {
       "DEFAULT_GEMINI_MODEL": "gpt-4",
       "DEFAULT_GEMINI_FLASH_MODEL": "gpt-3.5-turbo",
-      "DEFAULT_GEMINI_FLASH_LITE_MODEL": "gpt-3.5-turbo", 
+      "DEFAULT_GEMINI_FLASH_LITE_MODEL": "gpt-3.5-turbo",
       "DEFAULT_GEMINI_EMBEDDING_MODEL": "text-embedding-ada-002"
     },
-    
+
     "local_ollama_models": {
       "DEFAULT_GEMINI_MODEL": "llama3.1:70b",
       "DEFAULT_GEMINI_FLASH_MODEL": "llama3.1:8b",
       "DEFAULT_GEMINI_FLASH_LITE_MODEL": "llama3.1:8b"
     },
-    
+
     "mixed_setup": {
       "DEFAULT_GEMINI_MODEL": "gpt-4",
       "DEFAULT_GEMINI_FLASH_MODEL": "llama3.1:8b",
       "DEFAULT_GEMINI_FLASH_LITE_MODEL": "llama3.1:8b"
     },
-    
+
     "company_models": {
       "DEFAULT_GEMINI_MODEL": "company-model-v2",
       "DEFAULT_GEMINI_FLASH_MODEL": "company-model-fast",

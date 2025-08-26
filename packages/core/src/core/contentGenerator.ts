@@ -4,26 +4,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
+import type {
   CountTokensResponse,
   GenerateContentResponse,
   GenerateContentParameters,
   CountTokensParameters,
   EmbedContentResponse,
   EmbedContentParameters,
-  GoogleGenAI,
 } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { createCodeAssistContentGenerator } from '../code_assist/codeAssist.js';
 import { DEFAULT_GEMINI_MODEL } from '../config/models.js';
-import { Config } from '../config/config.js';
-import { getEffectiveModel } from './modelCheck.js';
-import { UserTierId } from '../code_assist/types.js';
-import { 
-  UniversalContentRequest, 
-  UniversalResponse, 
-  UniversalEmbeddingRequest, 
-  UniversalEmbeddingResponse 
+import type { Config } from '../config/config.js';
+import type { UserTierId } from '../code_assist/types.js';
+import {
+  UniversalContentRequest,
+  UniversalResponse,
+  UniversalEmbeddingRequest,
+  UniversalEmbeddingResponse,
 } from './universalTypes.js';
+import { LoggingContentGenerator } from './loggingContentGenerator.js';
+import { InstallationManager } from '../utils/installationManager.js';
 
 /**
  * Interface abstracting the core functionalities for generating content and counting tokens.
@@ -45,8 +46,12 @@ export interface ContentGenerator {
   embedContent(request: EmbedContentParameters): Promise<EmbedContentResponse>;
 
   // New provider-agnostic methods
-  generateUniversalContent?(request: UniversalContentRequest): Promise<UniversalResponse>;
-  generateUniversalEmbedding?(request: UniversalEmbeddingRequest): Promise<UniversalEmbeddingResponse>;
+  generateUniversalContent?(
+    request: UniversalContentRequest,
+  ): Promise<UniversalResponse>;
+  generateUniversalEmbedding?(
+    request: UniversalEmbeddingRequest,
+  ): Promise<UniversalEmbeddingResponse>;
 
   userTier?: UserTierId;
   providerType?: ProviderType;
@@ -87,12 +92,12 @@ export function createContentGeneratorConfig(
   config: Config,
   authType: AuthType | undefined,
 ): ContentGeneratorConfig {
-  const geminiApiKey = process.env.GEMINI_API_KEY || undefined;
-  const googleApiKey = process.env.GOOGLE_API_KEY || undefined;
-  const googleCloudProject = process.env.GOOGLE_CLOUD_PROJECT || undefined;
-  const googleCloudLocation = process.env.GOOGLE_CLOUD_LOCATION || undefined;
-  const openaiApiKey = process.env.OPENAI_API_KEY || undefined;
-  const openaiBaseUrl = process.env.OPENAI_BASE_URL || undefined;
+  const geminiApiKey = process.env['GEMINI_API_KEY'] || undefined;
+  const googleApiKey = process.env['GOOGLE_API_KEY'] || undefined;
+  const googleCloudProject = process.env['GOOGLE_CLOUD_PROJECT'] || undefined;
+  const googleCloudLocation = process.env['GOOGLE_CLOUD_LOCATION'] || undefined;
+  const openaiApiKey = process.env['OPENAI_API_KEY'] || undefined;
+  const openaiBaseUrl = process.env['OPENAI_BASE_URL'] || undefined;
 
   // Use runtime model from config if available; otherwise, fall back to parameter or default
   const effectiveModel = config.getModel() || DEFAULT_GEMINI_MODEL;
@@ -115,11 +120,6 @@ export function createContentGeneratorConfig(
   if (authType === AuthType.USE_GEMINI && geminiApiKey) {
     contentGeneratorConfig.apiKey = geminiApiKey;
     contentGeneratorConfig.vertexai = false;
-    getEffectiveModel(
-      contentGeneratorConfig.apiKey,
-      contentGeneratorConfig.model,
-      contentGeneratorConfig.proxy,
-    );
 
     return contentGeneratorConfig;
   }
@@ -138,12 +138,17 @@ export function createContentGeneratorConfig(
   if (authType === AuthType.OPENAI_API_KEY && openaiApiKey) {
     contentGeneratorConfig.provider = ProviderType.OPENAI;
     contentGeneratorConfig.apiKey = openaiApiKey;
-    contentGeneratorConfig.baseUrl = openaiBaseUrl || 'https://api.openai.com/v1';
+    contentGeneratorConfig.baseUrl =
+      openaiBaseUrl || 'https://api.openai.com/v1';
     return contentGeneratorConfig;
   }
 
   // Handle OpenAI-compatible endpoints
-  if (authType === AuthType.OPENAI_COMPATIBLE && openaiApiKey && openaiBaseUrl) {
+  if (
+    authType === AuthType.OPENAI_COMPATIBLE &&
+    openaiApiKey &&
+    openaiBaseUrl
+  ) {
     contentGeneratorConfig.provider = ProviderType.OPENAI_COMPATIBLE;
     contentGeneratorConfig.apiKey = openaiApiKey;
     contentGeneratorConfig.baseUrl = openaiBaseUrl;
@@ -158,12 +163,12 @@ export async function createContentGenerator(
   gcConfig: Config,
   sessionId?: string,
 ): Promise<ContentGenerator> {
-  const version = process.env.CLI_VERSION || process.version;
-  const httpOptions = {
-    headers: {
-      'User-Agent': `GeminiCLI/${version} (${process.platform}; ${process.arch})`,
-    },
+  const version = process.env['CLI_VERSION'] || process.version;
+  const userAgent = `GeminiCLI/${version} (${process.platform}; ${process.arch})`;
+  const baseHeaders: Record<string, string> = {
+    'User-Agent': userAgent,
   };
+  const httpOptions = { headers: baseHeaders };
 
   // Handle OpenAI and OpenAI-compatible providers
   if (
@@ -176,16 +181,18 @@ export async function createContentGenerator(
     return new OpenAIContentGenerator(config, httpOptions);
   }
 
-  // Handle Google OAuth and Cloud Shell
   if (
     config.authType === AuthType.LOGIN_WITH_GOOGLE ||
     config.authType === AuthType.CLOUD_SHELL
   ) {
-    return createCodeAssistContentGenerator(
-      httpOptions,
-      config.authType,
+    return new LoggingContentGenerator(
+      await createCodeAssistContentGenerator(
+        httpOptions,
+        config.authType,
+        gcConfig,
+        sessionId,
+      ),
       gcConfig,
-      sessionId,
     );
   }
 
@@ -194,15 +201,24 @@ export async function createContentGenerator(
     config.authType === AuthType.USE_GEMINI ||
     config.authType === AuthType.USE_VERTEX_AI
   ) {
+    let headers: Record<string, string> = { ...baseHeaders };
+    if (gcConfig?.getUsageStatisticsEnabled()) {
+      const installationManager = new InstallationManager();
+      const installationId = installationManager.getInstallationId();
+      headers = {
+        ...headers,
+        'x-gemini-api-privileged-user-id': `${installationId}`,
+      };
+    }
+    const geminiHttpOptions = { headers };
+
     const googleGenAI = new GoogleGenAI({
       apiKey: config.apiKey === '' ? undefined : config.apiKey,
       vertexai: config.vertexai,
-      httpOptions,
+      httpOptions: geminiHttpOptions,
     });
-
-    return googleGenAI.models;
+    return new LoggingContentGenerator(googleGenAI.models, gcConfig);
   }
-
   throw new Error(
     `Error creating contentGenerator: Unsupported authType/provider: ${config.authType}/${config.provider}`,
   );

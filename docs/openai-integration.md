@@ -5,6 +5,7 @@ The Gemini CLI now supports OpenAI and OpenAI-compatible endpoints alongside Goo
 ## Overview
 
 This integration enables you to:
+
 - **Use OpenAI models** like GPT-4, GPT-3.5-turbo directly
 - **Connect to local LLMs** running OpenAI-compatible APIs (Ollama, LocalAI, etc.)
 - **Switch between providers** seamlessly through the authentication system
@@ -15,11 +16,13 @@ This integration enables you to:
 ### 1. Set Up Environment Variables
 
 #### For OpenAI API
+
 ```bash
 export OPENAI_API_KEY="your-openai-api-key-here"
 ```
 
 #### For OpenAI-Compatible Endpoints (e.g., Ollama)
+
 ```bash
 export OPENAI_API_KEY="your-api-key-or-dummy-key"
 export OPENAI_BASE_URL="http://localhost:11434/v1"
@@ -40,6 +43,7 @@ That's it! You can now chat with OpenAI models using all the same features you'r
 ## Supported Providers
 
 ### OpenAI Official API
+
 - **Models**: gpt-4, gpt-4-turbo, gpt-3.5-turbo, and all current OpenAI models
 - **Features**: Text generation, streaming responses, embeddings
 - **Requirements**: Valid OpenAI API key
@@ -49,6 +53,7 @@ That's it! You can now chat with OpenAI models using all the same features you'r
 Popular options include:
 
 #### Ollama (Local LLM Runtime)
+
 ```bash
 # Install and run Ollama
 ollama serve
@@ -62,18 +67,21 @@ export OPENAI_BASE_URL="http://localhost:11434/v1"
 ```
 
 #### LocalAI
+
 ```bash
 export OPENAI_API_KEY="your-localai-key"
 export OPENAI_BASE_URL="http://localhost:8080/v1"
 ```
 
 #### Anthropic Claude (via proxy)
+
 ```bash
 export OPENAI_API_KEY="your-anthropic-key"
 export OPENAI_BASE_URL="https://api.anthropic.com/v1"
 ```
 
 #### Azure OpenAI
+
 ```bash
 export OPENAI_API_KEY="your-azure-key"
 export OPENAI_BASE_URL="https://your-resource.openai.azure.com/openai/deployments/your-deployment"
@@ -81,20 +89,22 @@ export OPENAI_BASE_URL="https://your-resource.openai.azure.com/openai/deployment
 
 ## Environment Variables Reference
 
-| Variable | Required | Description | Example |
-|----------|----------|-------------|---------|
-| `OPENAI_API_KEY` | ✅ | API key for authentication | `sk-proj-abc123...` |
-| `OPENAI_BASE_URL` | For compatible endpoints | Base URL for API calls | `http://localhost:11434/v1` |
-| `GEMINI_DEFAULT_AUTH_TYPE` | ❌ | Set default auth method | `openai-api-key` |
+| Variable                   | Required                 | Description                | Example                     |
+| -------------------------- | ------------------------ | -------------------------- | --------------------------- |
+| `OPENAI_API_KEY`           | ✅                       | API key for authentication | `sk-proj-abc123...`         |
+| `OPENAI_BASE_URL`          | For compatible endpoints | Base URL for API calls     | `http://localhost:11434/v1` |
+| `GEMINI_DEFAULT_AUTH_TYPE` | ❌                       | Set default auth method    | `openai-api-key`            |
 
 ## Authentication Methods
 
 ### OpenAI API Key
+
 - **Use case**: Official OpenAI API
 - **Requirements**: `OPENAI_API_KEY` environment variable
 - **Models**: All OpenAI models (gpt-4, gpt-3.5-turbo, etc.)
 
-### OpenAI-Compatible Endpoint  
+### OpenAI-Compatible Endpoint
+
 - **Use case**: Local LLMs, custom endpoints, alternative providers
 - **Requirements**: Both `OPENAI_API_KEY` and `OPENAI_BASE_URL`
 - **Models**: Depends on your endpoint (llama2, mistral, etc.)
@@ -117,6 +127,7 @@ gemini --model llama2
 ## Features & Compatibility
 
 ### ✅ Supported Features
+
 - **Text Generation**: Full conversational AI capabilities
 - **Streaming Responses**: Real-time response streaming
 - **Tool Integration**: All Gemini CLI tools work with OpenAI models
@@ -126,6 +137,7 @@ gemini --model llama2
 - **Embeddings**: Text embedding generation (where supported)
 
 ### ⚠️ Limitations
+
 - **Function Calling**: Limited to OpenAI's function calling format
 - **Token Counting**: Approximated for OpenAI (no direct API)
 - **Model-Specific Features**: Some features may vary by provider
@@ -135,6 +147,7 @@ gemini --model llama2
 ### Common Issues
 
 #### "OpenAI API key not found"
+
 ```bash
 # Ensure the environment variable is set
 echo $OPENAI_API_KEY
@@ -143,13 +156,15 @@ echo $OPENAI_API_KEY
 export OPENAI_API_KEY="your-key-here"
 ```
 
-#### "OpenAI Base URL not found" 
+#### "OpenAI Base URL not found"
+
 ```bash
 # Required for compatible endpoints
 export OPENAI_BASE_URL="http://localhost:11434/v1"
 ```
 
 #### Connection Errors
+
 ```bash
 # Test your endpoint directly
 curl -X POST "$OPENAI_BASE_URL/chat/completions" \
@@ -159,6 +174,7 @@ curl -X POST "$OPENAI_BASE_URL/chat/completions" \
 ```
 
 #### Model Not Found
+
 - Ensure the model name matches what your endpoint supports
 - For Ollama: Use `ollama list` to see available models
 - For OpenAI: Check the [official model list](https://platform.openai.com/docs/models)
@@ -166,6 +182,7 @@ curl -X POST "$OPENAI_BASE_URL/chat/completions" \
 ### Debug Mode
 
 Enable debug mode for detailed logging:
+
 ```bash
 gemini --debug
 ```
@@ -173,6 +190,7 @@ gemini --debug
 ## Examples
 
 ### Basic Chat with GPT-4
+
 ```bash
 export OPENAI_API_KEY="sk-proj-your-key-here"
 gemini --model gpt-4
@@ -180,6 +198,7 @@ gemini --model gpt-4
 ```
 
 ### Local Ollama Setup
+
 ```bash
 # Terminal 1: Start Ollama
 ollama serve
@@ -195,6 +214,7 @@ gemini --model mistral
 ```
 
 ### Switching Between Providers
+
 ```bash
 # Start with Gemini
 gemini
@@ -204,24 +224,29 @@ gemini
 # Select "OpenAI API Key"
 
 # Switch back to Gemini
-/auth  
+/auth
 # Select "Login with Google"
 ```
 
 ## Advanced Configuration
 
 ### Custom Headers (for compatible endpoints)
+
 Some endpoints may require additional headers. You can extend the integration by modifying the OpenAI client configuration.
 
 ### Proxy Support
+
 The OpenAI integration respects the same proxy settings as Gemini:
+
 ```bash
 export HTTPS_PROXY="http://your-proxy:8080"
 gemini
 ```
 
 ### Model Aliases
+
 You can create shell aliases for commonly used models:
+
 ```bash
 alias gemini-gpt4="OPENAI_API_KEY=$OPENAI_KEY gemini --model gpt-4"
 alias gemini-local="OPENAI_BASE_URL=http://localhost:11434/v1 gemini --model llama2"
@@ -230,14 +255,18 @@ alias gemini-local="OPENAI_BASE_URL=http://localhost:11434/v1 gemini --model lla
 ## Migration from Other Tools
 
 ### From OpenAI CLI
+
 Replace direct OpenAI CLI usage:
+
 ```bash
 # Instead of: openai api chat.completions.create -m gpt-4 -g user "Hello"
 # Use: gemini --model gpt-4 --prompt "Hello"
 ```
 
 ### From curl/API calls
+
 Replace direct API calls with Gemini CLI for better UX:
+
 ```bash
 # Instead of complex curl commands
 # Use the interactive Gemini CLI interface
@@ -260,6 +289,7 @@ The OpenAI integration is built with extensibility in mind. To add support for n
 4. Add tests for the new provider
 
 See the implementation in:
+
 - `packages/core/src/core/openaiClient.ts`
 - `packages/core/src/core/contentGenerator.ts`
 - `packages/cli/src/config/auth.ts`
@@ -267,6 +297,7 @@ See the implementation in:
 ## Support
 
 For issues specific to OpenAI integration:
+
 1. Check the [troubleshooting section](#troubleshooting)
 2. Verify your environment variables
 3. Test your endpoint independently

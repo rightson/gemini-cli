@@ -62,10 +62,7 @@ describe('FormatMapper', () => {
       const geminiContents: Content[] = [
         {
           role: 'user',
-          parts: [
-            { text: 'Hello, ' },
-            { text: 'how are you?' },
-          ] as Part[],
+          parts: [{ text: 'Hello, ' }, { text: 'how are you?' }] as Part[],
         },
       ];
 
@@ -258,7 +255,7 @@ describe('OpenAIContentGenerator', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer test-api-key',
+            Authorization: 'Bearer test-api-key',
           },
           body: JSON.stringify({
             model: 'gpt-4',

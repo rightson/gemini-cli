@@ -144,7 +144,7 @@ class ModelConfigManager {
       'DEFAULT_GEMINI_MODEL',
       'DEFAULT_GEMINI_FLASH_MODEL',
       'DEFAULT_GEMINI_FLASH_LITE_MODEL',
-      'DEFAULT_GEMINI_EMBEDDING_MODEL'
+      'DEFAULT_GEMINI_EMBEDDING_MODEL',
     ];
 
     for (const key of envKeys) {
@@ -197,14 +197,17 @@ class ModelConfigManager {
     if (modelName.includes('gpt-4') || modelName.includes('claude-3')) {
       return 128_000;
     }
-    if (modelName.includes('gpt-3.5') || modelName.includes('mini') || modelName.includes('lite')) {
+    if (
+      modelName.includes('gpt-3.5') ||
+      modelName.includes('mini') ||
+      modelName.includes('lite')
+    ) {
       return 16_384;
     }
 
     // Default fallback
     return 1_048_576;
   }
-
 
   /**
    * Get all current model overrides
@@ -254,8 +257,10 @@ export const modelConfig = {
   getTokenLimit: (model: string) => getModelConfig().getTokenLimit(model),
   getAllModels: () => getModelConfig().getAllModels(),
   getAllTokenLimits: () => getModelConfig().getAllTokenLimits(),
-  refresh: (workingDirectory?: string) => getModelConfig().refresh(workingDirectory),
-  initialize: (workingDirectory?: string) => getModelConfig().initialize(workingDirectory),
+  refresh: (workingDirectory?: string) =>
+    getModelConfig().refresh(workingDirectory),
+  initialize: (workingDirectory?: string) =>
+    getModelConfig().initialize(workingDirectory),
 };
 
 export { ModelConfigManager };

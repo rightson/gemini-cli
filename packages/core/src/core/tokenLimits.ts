@@ -9,7 +9,6 @@ type TokenCount = number;
 
 export const DEFAULT_TOKEN_LIMIT = 1_048_576;
 
-
 export function tokenLimit(model: Model): TokenCount {
   // Add other models as they become relevant or if specified by config
   // Pulled from https://ai.google.dev/gemini-api/docs/models
@@ -28,7 +27,7 @@ export function tokenLimit(model: Model): TokenCount {
     case 'gemini-2.0-flash-preview-image-generation':
       return 32_000;
 
-      default:
+    default:
       // Try to use models.json configuration for non-Gemini models
       try {
         const { modelConfig } = require('../config/modelConfig.js');

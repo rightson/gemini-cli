@@ -25,10 +25,10 @@ describe('ModelConfigManager', () => {
     // Clean up test files
     const envFile = join(testDir, '.env');
     const jsonFile = join(testDir, 'models.json');
-    
+
     if (existsSync(envFile)) unlinkSync(envFile);
     if (existsSync(jsonFile)) unlinkSync(jsonFile);
-    
+
     try {
       unlinkSync(testDir);
     } catch {
@@ -39,16 +39,22 @@ describe('ModelConfigManager', () => {
   describe('default values', () => {
     it('should return default Gemini models', () => {
       manager.initialize(testDir);
-      
+
       expect(manager.getModel('DEFAULT_GEMINI_MODEL')).toBe('gemini-2.5-pro');
-      expect(manager.getModel('DEFAULT_GEMINI_FLASH_MODEL')).toBe('gemini-2.5-flash');
-      expect(manager.getModel('DEFAULT_GEMINI_FLASH_LITE_MODEL')).toBe('gemini-2.5-flash-lite');
-      expect(manager.getModel('DEFAULT_GEMINI_EMBEDDING_MODEL')).toBe('gemini-embedding-001');
+      expect(manager.getModel('DEFAULT_GEMINI_FLASH_MODEL')).toBe(
+        'gemini-2.5-flash',
+      );
+      expect(manager.getModel('DEFAULT_GEMINI_FLASH_LITE_MODEL')).toBe(
+        'gemini-2.5-flash-lite',
+      );
+      expect(manager.getModel('DEFAULT_GEMINI_EMBEDDING_MODEL')).toBe(
+        'gemini-embedding-001',
+      );
     });
 
     it('should return default token limits', () => {
       manager.initialize(testDir);
-      
+
       expect(manager.getTokenLimit('gemini-2.5-pro')).toBe(1_048_576);
       expect(manager.getTokenLimit('gpt-4')).toBe(128_000);
       expect(manager.getTokenLimit('gpt-3.5-turbo')).toBe(16_384);
@@ -73,14 +79,16 @@ describe('ModelConfigManager', () => {
       manager.initialize(testDir);
 
       expect(manager.getModel('DEFAULT_GEMINI_MODEL')).toBe('gpt-4.1');
-      expect(manager.getModel('DEFAULT_GEMINI_FLASH_MODEL')).toBe('gpt-4.1-mini');
+      expect(manager.getModel('DEFAULT_GEMINI_FLASH_MODEL')).toBe(
+        'gpt-4.1-mini',
+      );
       expect(manager.getTokenLimit('gpt-4.1')).toBe(150_000);
       expect(manager.getTokenLimit('custom-model')).toBe(50_000);
     });
 
     it('should handle invalid JSON gracefully', () => {
       writeFileSync(join(testDir, 'models.json'), 'invalid json');
-      
+
       // Should not throw and should use defaults
       expect(() => manager.initialize(testDir)).not.toThrow();
       expect(manager.getModel('DEFAULT_GEMINI_MODEL')).toBe('gemini-2.5-pro');
@@ -90,7 +98,7 @@ describe('ModelConfigManager', () => {
   describe('environment variable configuration', () => {
     it('should load model overrides from process.env', () => {
       const originalEnv = { ...process.env };
-      
+
       process.env.DEFAULT_GEMINI_MODEL = 'gpt-4.1';
       process.env.DEFAULT_GEMINI_FLASH_LITE_MODEL = 'gpt-4.1-mini';
       process.env.MODEL_TOKEN_LIMIT_GPT_4_1 = '200000';
@@ -99,7 +107,9 @@ describe('ModelConfigManager', () => {
       manager.initialize(testDir);
 
       expect(manager.getModel('DEFAULT_GEMINI_MODEL')).toBe('gpt-4.1');
-      expect(manager.getModel('DEFAULT_GEMINI_FLASH_LITE_MODEL')).toBe('gpt-4.1-mini');
+      expect(manager.getModel('DEFAULT_GEMINI_FLASH_LITE_MODEL')).toBe(
+        'gpt-4.1-mini',
+      );
       expect(manager.getTokenLimit('gpt-4.1')).toBe(200_000);
       expect(manager.getTokenLimit('custom-model')).toBe(64_000);
 
@@ -115,15 +125,15 @@ describe('ModelConfigManager', () => {
       // GPT-4 variants
       expect(manager.getTokenLimit('gpt-4-custom')).toBe(128_000);
       expect(manager.getTokenLimit('custom-gpt-4-model')).toBe(128_000);
-      
-      // Claude variants  
+
+      // Claude variants
       expect(manager.getTokenLimit('claude-3-custom')).toBe(128_000);
-      
+
       // Mini/lite variants
       expect(manager.getTokenLimit('gpt-3.5-turbo-custom')).toBe(16_384);
       expect(manager.getTokenLimit('custom-mini-model')).toBe(16_384);
       expect(manager.getTokenLimit('custom-lite-model')).toBe(16_384);
-      
+
       // Unknown models
       expect(manager.getTokenLimit('completely-unknown-model')).toBe(1_048_576);
     });
